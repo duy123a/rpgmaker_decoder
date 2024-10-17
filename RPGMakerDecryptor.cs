@@ -63,6 +63,9 @@ namespace rpgmaker_decoder
 					}
 				}
 			}
+
+			var newFilePath = file.CreateNewFilePath();
+			File.WriteAllBytes(newFilePath, content);
 		}
 
 		public void DetectEncryptionKeyFromImage(RPGMakerFile file)
@@ -175,6 +178,43 @@ namespace rpgmaker_decoder
 			return newByteArray;
 		}
 
+		/// <summary>
+		/// Update source path
+		/// </summary>
+		/// <exception cref="ArgumentException">srcPath is invalid</exception>
+		public void UpdateSrcPath()
+		{
+			var srcPath = this.SourcePath;
+			var srcInfo = new DirectoryInfo(srcPath);
+
+			if (Directory.Exists(Path.Combine(srcPath, "img")))
+			{
+				Console.WriteLine("Found 'img' in source path, using parent directory name");
+				if (srcInfo.Parent == null || srcInfo.Parent.Parent == null)
+				{
+					throw new ArgumentException("Source path is invalid (unable to move two directories up)", nameof(srcPath));
+				}
+
+				srcPath = srcInfo.Parent.Parent.FullName; // Move two directories up
+			}
+			else if (Directory.Exists(Path.Combine(srcPath, "www")))
+			{
+				Console.WriteLine("Found 'www' in source path, using parent directory name");
+				if (srcInfo.Parent == null)
+				{
+					throw new ArgumentException("Source path is invalid (unable to move one directory up)", nameof(srcPath));
+				}
+
+				srcPath = srcInfo.Parent.FullName; // Move one directory up
+			}
+			else
+			{
+				throw new ArgumentException("Source path is invalid (not contain RPG Maker project)", nameof(srcPath));
+			}
+
+			this.SourcePath = srcPath;
+		}
+
 		public int GetHeaderLength()
 		{
 			return this.HeaderLength;
@@ -195,6 +235,11 @@ namespace rpgmaker_decoder
 			return this.Remain;
 		}
 
+		public string GetSourcePath()
+		{
+			return this.SourcePath;
+		}
+
 		public byte[] GetRpgHeaderBytes()
 		{
 			if (this.RpgHeaderBytes == null)
@@ -211,5 +256,6 @@ namespace rpgmaker_decoder
 		private byte[] RpgHeaderBytes { get; set; }
 		private bool IgnoreFakeHeader { get; set; }
 		private string DecryptCode { get; set; }
+		private string SourcePath { get; set; }
 	}
 }

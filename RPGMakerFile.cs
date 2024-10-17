@@ -8,21 +8,24 @@ namespace rpgmaker_decoder
 	/// </summary>
 	public class RPGMakerFile
 	{
+		private readonly static string OUTPUT_FOLDER = "Output";
+
 		private readonly FileInfo _file;
 		private readonly string _name;
 		private readonly string _extension;
 		private readonly byte[] _content;
 		private readonly string _filePath;
-		private string _newFilePath;
+		private string _sourcePath;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="RPGMakerFile"/> class.
 		/// </summary>
 		/// <param name="filePath">The path of the file.</param>
+		/// <param name="sourcePath">The path of the source project</param>
 		/// <exception cref="ArgumentNullException">Thrown when <paramref name="filePath"/> is null.</exception>
 		/// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
 		/// <exception cref="FileLoadException">Thrown when the file is too large to load.</exception>
-		public RPGMakerFile(string filePath)
+		public RPGMakerFile(string filePath, string sourcePath)
 		{
 			if (string.IsNullOrWhiteSpace(filePath))
 			{
@@ -43,15 +46,8 @@ namespace rpgmaker_decoder
 			_name = _file.Name;
 			_extension = _file.Extension;
 			_filePath = filePath;
-			_newFilePath = string.Empty;
+			_sourcePath = sourcePath;
 			_content = File.ReadAllBytes(filePath);
-			//using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-			//{
-			//	using (var reader = new BinaryReader(fileStream))
-			//	{
-			//		_content = reader.ReadBytes((int)reader.BaseStream.Length);
-			//	}
-			//}
 		}
 
 		/// <summary>
@@ -61,6 +57,33 @@ namespace rpgmaker_decoder
 		public bool CheckExist()
 		{
 			return _file.Exists;
+		}
+
+		/// <summary>
+		/// Create new file path
+		/// </summary>
+		/// <returns>New file path</returns>
+		/// <exception cref="ArgumentException">File path is not inside the source path</exception>
+		public string CreateNewFilePath()
+		{
+			var outputRootPath = Path.Combine(_sourcePath, OUTPUT_FOLDER);
+
+			// Ensure filePath is inside sourcePath
+			if (!_filePath.StartsWith(_sourcePath, StringComparison.OrdinalIgnoreCase))
+			{
+				throw new ArgumentException("File path is not inside the source path");
+			}
+
+			// Get the relative path from the sourcePath to the filePath (excluding the file name)
+			string relativePath = _filePath.Substring(_sourcePath.Length);
+
+			// Combine the relative path with the output directory
+			string outputFilePath = Path.Combine(outputRootPath, relativePath);
+
+			// Change the extension of the file using RealExtByFakeExt
+			string newFilePath = Path.ChangeExtension(outputFilePath, RealExtByFakeExt());
+
+			return newFilePath;
 		}
 
 		/// <summary>
@@ -95,8 +118,8 @@ namespace rpgmaker_decoder
 		public string FilePath => _filePath;
 		public string NewFilePath
 		{
-			get => _newFilePath;
-			set => _newFilePath = value;
+			get => _sourcePath;
+			set => _sourcePath = value;
 		}
 	}
 }
