@@ -11,13 +11,14 @@ namespace rpgmaker_decoder
 
             var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             var locator = new RPGMakerLocator(baseDirectory);
-            var decryptor = new RPGMakerDecryptor();
+            var decryptKey = string.Empty;
 
             var encryptedFileList = locator.GetFilesWithFakeExtensions()?.ToList();
 
             if (encryptedFileList == null || !encryptedFileList.Any())
             {
                 Console.WriteLine("No files need to be decrypted");
+                Console.ReadLine();
                 return;
             }
 
@@ -28,17 +29,19 @@ namespace rpgmaker_decoder
             if (string.IsNullOrEmpty(firstImage))
             {
                 Console.WriteLine("No encrypted image file, so we can't get a decryption key");
+                Console.ReadLine();
                 return;
             }
 
             try
             {
-                decryptor.ExtractEncryptionKey(new RPGMakerFile(firstImage, baseDirectory));
-                Console.WriteLine($"Decryption key extracted: {decryptor.DecryptKey}");
+                decryptKey = RPGMakerDecryptor.ExtractEncryptionKey(new RPGMakerFile(firstImage, baseDirectory));
+                Console.WriteLine($"Decryption key extracted: {decryptKey}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to extract decryption key: {ex.Message}");
+                Console.ReadLine();
                 return;
             }
 
@@ -50,7 +53,7 @@ namespace rpgmaker_decoder
             {
                 try
                 {
-                    decryptor.DecryptFile(new RPGMakerFile(encryptedFile, baseDirectory));
+                    RPGMakerDecryptor.DecryptWithKey(new RPGMakerFile(encryptedFile, baseDirectory), decryptKey);
                     processedCount++;
 
                     Console.WriteLine($"Decrypted successfully: {Path.GetFileName(encryptedFile)}");
@@ -70,7 +73,7 @@ namespace rpgmaker_decoder
             // Stop timing and print execution time
             stopwatch.Stop();
             Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
-            Console.ReadKey();
+            Console.ReadLine();
         }
     }
 }
