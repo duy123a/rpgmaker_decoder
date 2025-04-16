@@ -49,24 +49,21 @@ namespace rpgmaker_decoder
 
             int processedCount = 0;
 
-            foreach (var encryptedFile in encryptedFileList)
+            Parallel.ForEach(encryptedFileList, encryptedFile =>
             {
                 try
                 {
                     RPGMakerDecryptor.DecryptWithKey(new RPGMakerFile(encryptedFile, baseDirectory), decryptKey);
-                    processedCount++;
+                    var currentCount = Interlocked.Increment(ref processedCount);
 
-                    Console.WriteLine($"Decrypted successfully: {Path.GetFileName(encryptedFile)}");
-
-                    // Calculate and display progress
-                    int progressPercentage = (processedCount * 100) / encryptedFileList.Count;
-                    Console.Write($"\rProgress: {progressPercentage}%\t");
+                    var progress = (currentCount * 100) / encryptedFileList.Count;
+                    Console.WriteLine($"[{progress}%] Decrypted: {Path.GetFileName(encryptedFile)}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"\nError processing file '{encryptedFile}': {ex.Message}");
+                    Console.WriteLine($"\nError on {encryptedFile}: {ex.Message}");
                 }
-            }
+            });
 
             Console.WriteLine("\nDecryption completed!");
 
